@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient, keepPreviousData } from "@tanstack/react-query";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import {
   ChevronLeft,
   ChevronRight,
@@ -118,7 +118,10 @@ export default function Contacts() {
   const [search, setSearch] = useState("");
   const [tag, setTag] = useState("");
   const [sort, setSort] = useState("-createdAt");
-  const [view, setView] = useState("all");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const viewParam = searchParams.get("view");
+  const view = viewParam === "favourites" || viewParam === "recent" ? viewParam : "all";
+  const setView = (v) => setSearchParams(v === "all" ? {} : { view: v });
   const [page, setPage] = useState(1);
   const [toDelete, setToDelete] = useState(null);
 

@@ -1,10 +1,33 @@
-import { NavLink, Outlet, useNavigate } from "react-router-dom";
-import { LayoutDashboard, Users, LogOut, Sprout } from "lucide-react";
+import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { LayoutDashboard, Users, UserPlus, Star, LogOut, Sprout } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 
 const links = [
-  { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { to: "/contacts", label: "Contacts", icon: Users },
+  {
+    to: "/dashboard",
+    label: "Dashboard",
+    icon: LayoutDashboard,
+    active: (p) => p === "/dashboard",
+  },
+  {
+    to: "/contacts",
+    label: "Contacts",
+    icon: Users,
+    active: (p, fav) =>
+      (p === "/contacts" && !fav) || (p.startsWith("/contacts/") && p !== "/contacts/new"),
+  },
+  {
+    to: "/contacts/new",
+    label: "Add Contact",
+    icon: UserPlus,
+    active: (p) => p === "/contacts/new",
+  },
+  {
+    to: "/contacts?view=favourites",
+    label: "Favourites",
+    icon: Star,
+    active: (p, fav) => p === "/contacts" && fav,
+  },
 ];
 
 const getGreeting = () => {
@@ -17,6 +40,8 @@ const getGreeting = () => {
 export default function AppLayout() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const { pathname, search } = useLocation();
+  const isFavView = new URLSearchParams(search).get("view") === "favourites";
 
   const handleLogout = () => {
     logout();
@@ -44,20 +69,18 @@ export default function AppLayout() {
             Overview
           </p>
           <div className="space-y-1">
-            {links.map(({ to, label, icon: Icon }) => (
-              <NavLink
+            {links.map(({ to, label, icon: Icon, active }) => (
+              <Link
                 key={to}
                 to={to}
-                className={({ isActive }) =>
-                  `flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition ${
-                    isActive
-                      ? "bg-white/15 text-white"
-                      : "text-white/70 hover:bg-white/10 hover:text-white"
-                  }`
-                }
+                className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition ${
+                  active(pathname, isFavView)
+                    ? "bg-white/15 text-white"
+                    : "text-white/70 hover:bg-white/10 hover:text-white"
+                }`}
               >
                 <Icon size={18} /> {label}
-              </NavLink>
+              </Link>
             ))}
           </div>
         </nav>
