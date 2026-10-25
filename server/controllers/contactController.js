@@ -67,6 +67,12 @@ export const getContacts = async (req, res) => {
  
     const tag = String(req.query.tag || "").trim().toLowerCase();
     if (tag) filter.tags = tag;
+
+    if (req.query.favourite === "true") filter.isFavourite = true;
+
+    if (req.query.recent === "true") {
+      filter.createdAt = { $gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) };
+    }
  
     const total = await Contact.countDocuments(filter);
     const contacts = await Contact.find(filter)
