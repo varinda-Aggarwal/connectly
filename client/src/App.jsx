@@ -4,6 +4,8 @@ import { AuthProvider } from "./context/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AppLayout from "./components/AppLayout";
 import Login from "./pages/Login";
+import Landing from "./pages/Landing";
+import GuestRoute from "./components/GuestRoute";
 import Signup from "./pages/Signup";
 import Contacts from "./pages/Contacts";
 import ContactForm from "./pages/ContactForm";
@@ -16,8 +18,9 @@ export default function App() {
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
           <Routes>
-            <Route path="/login" element={<Login />} />
-            <Route path="/signup" element={<Signup />} />
+            <Route path="/" element={<Landing />} />
+            <Route path="/login" element={<GuestRoute><Login /></GuestRoute>} />
+             <Route path="/signup" element={<GuestRoute><Signup /></GuestRoute>} />
             <Route
               element={
                 <ProtectedRoute>
