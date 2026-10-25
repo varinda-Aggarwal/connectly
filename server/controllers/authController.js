@@ -45,3 +45,9 @@ export const login = async (req, res) => {
     res.status(500).json({ message: "Login failed" });
   }
 };
+
+export const getMe = (req, res) => {
+  res.json({
+    user: { id: req.user._id, name: req.user.name, email: req.user.email },
+  });
+};
