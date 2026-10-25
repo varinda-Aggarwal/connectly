@@ -145,3 +145,12 @@ export const toggleFavourite = async (req, res) => {
     res.status(500).json({ message: "Could not update favourite" });
   }
 };
+
+export const getTags = async (req, res) => {
+  try {
+    const tags = await Contact.distinct("tags", { userId: req.user._id });
+    res.json(tags.sort());
+  } catch (err) {
+    res.status(500).json({ message: "Could not fetch tags" });
+  }
+};
