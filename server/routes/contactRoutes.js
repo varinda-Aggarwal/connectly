@@ -19,12 +19,10 @@ router.use(protect);
 
 router.get("/", getContacts);
 router.get("/tags", getTags);
-router.post("/", contactValidation, handleValidation, createContact);
+router.post("/", upload, contactValidation, handleValidation, uploadToCloudinary, createContact);
 router.get("/:id", getContactById);
-router.put("/:id", contactValidation, handleValidation, updateContact);
+router.put("/:id", upload, contactValidation, handleValidation, uploadToCloudinary, updateContact);
 router.delete("/:id", deleteContact);
 router.patch("/:id/favourite", toggleFavourite);
-router.post("/", upload, contactValidation, handleValidation, uploadToCloudinary, createContact);
-router.put("/:id", upload, contactValidation, handleValidation, uploadToCloudinary, updateContact);
 
 export default router;
