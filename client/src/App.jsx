@@ -35,7 +35,7 @@ export default function App() {
               <Route path="/contacts/:id" element={<ContactDetails />} />
               <Route path="/dashboard" element={<Dashboard />} />
             </Route>
-            <Route path="*" element={<Navigate to="/contacts" replace />} />
+            <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>
         </AuthProvider>
       </QueryClientProvider>
