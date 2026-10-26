@@ -10,6 +10,7 @@ import Signup from "./pages/Signup";
 import Contacts from "./pages/Contacts";
 import ContactForm from "./pages/ContactForm";
 import ContactDetails from "./pages/ContactDetails";
+import Dashboard from "./pages/Dashboard";
 const queryClient = new QueryClient();
 
 export default function App() {
@@ -32,6 +33,7 @@ export default function App() {
               <Route path="/contacts/new" element={<ContactForm />} />
               <Route path="/contacts/:id/edit" element={<ContactForm />} />
               <Route path="/contacts/:id" element={<ContactDetails />} />
+              <Route path="/dashboard" element={<Dashboard />} />
             </Route>
             <Route path="*" element={<Navigate to="/contacts" replace />} />
           </Routes>
