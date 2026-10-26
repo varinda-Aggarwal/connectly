@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import Contact from "../models/Contact.js";
+import Followup from "../models/Followup.js";
 import { deleteFromCloudinary } from "../middleware/upload.js";
 
 const ALLOWED_SORT = ["createdAt", "name", "company"];
@@ -162,6 +163,7 @@ export const deleteContact = async (req, res) => {
 
     const publicId = contact.photoPublicId;
     await contact.deleteOne();
+    await Followup.deleteMany({ contactId: contact._id }); // contact ke follow-ups bhi hatao
     await deleteFromCloudinary(publicId);
 
     res.json({ message: "Contact deleted" });
