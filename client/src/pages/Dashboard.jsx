@@ -241,12 +241,6 @@ export default function Dashboard() {
           <p className="text-xs text-muted">{today}</p>
           <h1 className="font-serif text-3xl font-semibold text-ink">Your network, at a glance</h1>
         </div>
-        <Link
-          to="/contacts/new"
-          className="flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-primary-dark"
-        >
-          <Plus size={18} /> Add Contact
-        </Link>
       </div>
 
       {isLoading ? (
@@ -265,29 +259,32 @@ export default function Dashboard() {
       ) : (
         <div className="space-y-5">
           {/* Hero card */}
-          <div className="rounded-2xl bg-primary p-6 text-white shadow-sm">
+          <div
+            className="rounded-2xl border border-line p-6 text-ink shadow-sm"
+            style={{ background: "linear-gradient(135deg, #e6dcf5 0%, #cfdccb 100%)" }}
+          >
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-sm text-white/70">Your network</p>
+                <p className="text-sm text-ink/70">Your network</p>
                 <p className="mt-1 font-serif text-4xl font-semibold">
                   {data.total} {data.total === 1 ? "contact" : "contacts"}
                 </p>
-                <p className="mt-1 text-sm text-white/70">Your personal connections, organized.</p>
+                <p className="mt-1 text-sm text-ink/70">Your personal connections, organized.</p>
               </div>
-              <Contact size={30} className="text-white/80" />
+              <Contact size={30} className="text-primary-dark" />
             </div>
 
-            <div className="mt-5 grid grid-cols-3 gap-4 border-t border-white/20 pt-4">
+            <div className="mt-5 grid grid-cols-3 gap-4 border-t border-ink/15 pt-4">
               <div>
-                <p className="text-xs text-white/70">Added this month</p>
+                <p className="text-xs text-ink/70">Added this month</p>
                 <p className="mt-1 font-serif text-2xl font-semibold">{pad(data.addedThisMonth)}</p>
               </div>
               <div>
-                <p className="text-xs text-white/70">With company details</p>
+                <p className="text-xs text-ink/70">With company details</p>
                 <p className="mt-1 font-serif text-2xl font-semibold">{pad(data.withCompany)}</p>
               </div>
               <div>
-                <p className="text-xs text-white/70">With tags</p>
+                <p className="text-xs text-ink/70">With tags</p>
                 <p className="mt-1 font-serif text-2xl font-semibold">{pad(data.withTags)}</p>
               </div>
             </div>

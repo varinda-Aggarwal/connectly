@@ -20,7 +20,7 @@ export default function Login() {
     setServerError("");
     try {
       await login(email, password);
-      navigate("/contacts");
+      navigate("/dashboard");
     } catch (err) {
       setServerError(err.response?.data?.message || "Something went wrong. Please try again.");
     }

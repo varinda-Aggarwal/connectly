@@ -68,7 +68,7 @@ const steps = [
 
 export default function Landing() {
   const { user } = useAuth();
-   const startLink = user ? "/contacts" : "/signup";
+     const startLink = user ? "/dashboard" : "/signup";
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -102,7 +102,7 @@ export default function Landing() {
           <div className="flex items-center gap-3">
             {user ? (
               <Link
-                to="/contacts"
+                to="/dashboard"
                 className="flex items-center gap-2 rounded-xl bg-sidebar px-5 py-2.5 text-sm font-semibold text-white transition hover:opacity-90"
               >
                 Open App <ArrowRight size={16} />

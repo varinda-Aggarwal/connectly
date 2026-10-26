@@ -4,5 +4,5 @@ import { useAuth } from "../context/AuthContext";
 export default function GuestRoute({ children }) {
   const { user, loading } = useAuth();
   if (loading) return null;
-  return user ? <Navigate to="/contacts" replace /> : children;
+  return user ? <Navigate to="/dashboard" replace /> : children;
 }

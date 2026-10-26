@@ -30,7 +30,7 @@ export default function Signup() {
     setServerError("");
     try {
       await registerUser(name, email, password);
-      navigate("/contacts");
+      navigate("/dashboard");
     } catch (err) {
       setServerError(err.response?.data?.message || "Something went wrong. Please try again.");
     }
