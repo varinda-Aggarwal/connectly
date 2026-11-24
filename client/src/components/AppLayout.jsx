@@ -1,5 +1,5 @@
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
-import { LayoutDashboard, Users, UserPlus, Star, LogOut, Sprout } from "lucide-react";
+import { LayoutDashboard, Users, UserPlus, Star, Trash2, LogOut, Sprout } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 
 const links = [
@@ -27,6 +27,12 @@ const links = [
     label: "Favourites",
     icon: Star,
     active: (p, fav) => p === "/contacts" && fav,
+  },
+  {
+    to: "/trash",
+    label: "Trash",
+    icon: Trash2,
+    active: (p) => p === "/trash",
   },
 ];
 

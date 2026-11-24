@@ -8,6 +8,7 @@ import Landing from "./pages/Landing";
 import GuestRoute from "./components/GuestRoute";
 import Signup from "./pages/Signup";
 import Contacts from "./pages/Contacts";
+import Trash from "./pages/Trash";
 import ContactForm from "./pages/ContactForm";
 import ContactDetails from "./pages/ContactDetails";
 import Dashboard from "./pages/Dashboard";
@@ -30,6 +31,7 @@ export default function App() {
               }
             >
               <Route path="/contacts" element={<Contacts />} />
+                    <Route path="/trash" element={<Trash />} />
               <Route path="/contacts/new" element={<ContactForm />} />
               <Route path="/contacts/:id/edit" element={<ContactForm />} />
               <Route path="/contacts/:id" element={<ContactDetails />} />

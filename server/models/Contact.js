@@ -13,14 +13,23 @@ const contactSchema = new mongoose.Schema(
     photoUrl: { type: String, default: "" },
     photoPublicId: { type: String, default: "" },
     isFavourite: { type: Boolean, default: false },
+    isDeleted: { type: Boolean, default: false },
+    deletedAt: { type: Date, default: null },
+    lastContactedAt: { type: Date, default: null },
   },
   { timestamps: true }
 );
 
-// ek user ke andar email unique, lekin sirf jahan email actually diya ho
+// ek user ke andar email unique, sirf active (trash mein nahi) contacts ke liye
 contactSchema.index(
   { userId: 1, email: 1 },
-  { unique: true, partialFilterExpression: { email: { $type: "string", $gt: "" } } }
+  {
+    unique: true,
+    partialFilterExpression: { email: { $type: "string", $gt: "" }, isDeleted: false },
+  }
 );
+
+// trash list aur 30 din ke purge ke liye
+contactSchema.index({ userId: 1, isDeleted: 1, deletedAt: -1 });
 
 export default mongoose.model("Contact", contactSchema);
