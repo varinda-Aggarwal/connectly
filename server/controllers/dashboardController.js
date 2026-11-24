@@ -2,7 +2,7 @@ import Contact from "../models/Contact.js";
 
 export const getSummary = async (req, res, next) => {
   try {
-    const filter = { userId: req.user._id };
+      const filter = { userId: req.user._id, isDeleted: { $ne: true } };
 
     const startOfMonth = new Date();
     startOfMonth.setDate(1);
