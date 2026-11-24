@@ -58,7 +58,7 @@ export const getContacts = async (req, res) => {
     }
     const dir = desc ? -1 : 1;
 
-    const filter = { userId: req.user._id };
+    const filter = { userId: req.user._id, isDeleted: { $ne: true } };
 
     const search = String(req.query.search || "").trim();
     if (search) {
@@ -93,7 +93,7 @@ const findOwnContact = async (req, res) => {
     res.status(400).json({ message: "Invalid contact id" });
     return null;
   }
-  const contact = await Contact.findOne({ _id: id, userId: req.user._id });
+  const contact = await Contact.findOne({ _id: id, userId: req.user._id, isDeleted: { $ne: true } });
   if (!contact) {
     res.status(404).json({ message: "Contact not found" });
     return null;
@@ -161,14 +161,14 @@ export const deleteContact = async (req, res) => {
     const contact = await findOwnContact(req, res);
     if (!contact) return;
 
-    const publicId = contact.photoPublicId;
-    await contact.deleteOne();
-    await Followup.deleteMany({ contactId: contact._id }); // contact ke follow-ups bhi hatao
-    await deleteFromCloudinary(publicId);
+    // trash mein bhejo: follow-ups aur photo waise hi rehte hain, restore par wapas mil jate hain
+    contact.isDeleted = true;
+    contact.deletedAt = new Date();
+    await contact.save();
 
-    res.json({ message: "Contact deleted" });
+    res.json({ message: "Contact moved to trash" });
   } catch (err) {
-    res.status(500).json({ message: "Could not delete contact" });
+    res.status(500).json({ message: "Could not move contact to trash" });
   }
 };
 
@@ -186,9 +186,103 @@ export const toggleFavourite = async (req, res) => {
 
 export const getTags = async (req, res) => {
   try {
-    const tags = await Contact.distinct("tags", { userId: req.user._id });
+    const tags = await Contact.distinct("tags", { userId: req.user._id, isDeleted: { $ne: true } });
     res.json(tags.sort());
   } catch (err) {
     res.status(500).json({ message: "Could not fetch tags" });
+  }
+};
+
+const TRASH_DAYS = 30;
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+// contact hamesha ke liye hatao: follow-ups aur Cloudinary photo ke saath
+const removeContactForever = async (contact) => {
+  await Followup.deleteMany({ contactId: contact._id });
+  // Person 3 ka Interaction model aane par yahan Interaction.deleteMany bhi jodna hai
+  await deleteFromCloudinary(contact.photoPublicId);
+  await contact.deleteOne();
+};
+
+// 30 din se purane trash contacts delete karo (userId do toh sirf us user ke)
+export const purgeExpiredTrash = async (userId) => {
+  const filter = {
+    isDeleted: true,
+    deletedAt: { $lt: new Date(Date.now() - TRASH_DAYS * DAY_MS) },
+  };
+  if (userId) filter.userId = userId;
+
+  const expired = await Contact.find(filter);
+  for (const contact of expired) await removeContactForever(contact);
+  return expired.length;
+};
+
+const findTrashedContact = async (req, res) => {
+  const { id } = req.params;
+  if (!mongoose.isValidObjectId(id)) {
+    res.status(400).json({ message: "Invalid contact id" });
+    return null;
+  }
+  const contact = await Contact.findOne({ _id: id, userId: req.user._id, isDeleted: true });
+  if (!contact) {
+    res.status(404).json({ message: "Contact not found in trash" });
+    return null;
+  }
+  return contact;
+};
+
+export const getTrash = async (req, res) => {
+  try {
+    await purgeExpiredTrash(req.user._id);
+
+    const contacts = await Contact.find({ userId: req.user._id, isDeleted: true }).sort({
+      deletedAt: -1,
+    });
+
+    const items = contacts.map((c) => {
+      const deletedAt = c.deletedAt || c.updatedAt || new Date();
+      const daysLeft = Math.max(
+        Math.ceil((deletedAt.getTime() + TRASH_DAYS * DAY_MS - Date.now()) / DAY_MS),
+        0
+      );
+      return { ...c.toObject(), daysLeft };
+    });
+
+    res.json({ contacts: items, total: items.length });
+  } catch (err) {
+    res.status(500).json({ message: "Could not fetch trash" });
+  }
+};
+
+export const restoreContact = async (req, res) => {
+  try {
+    const contact = await findTrashedContact(req, res);
+    if (!contact) return;
+
+    contact.isDeleted = false;
+    contact.deletedAt = null;
+    await contact.save();
+
+    res.json(contact);
+  } catch (err) {
+    // trash mein rehte hue us email se naya contact ban gaya ho
+    if (err.code === 11000) {
+      return res.status(409).json({
+        message: "An active contact with this email already exists. Edit or delete that one first.",
+      });
+    }
+    res.status(500).json({ message: "Could not restore contact" });
+  }
+};
+
+export const permanentDeleteContact = async (req, res) => {
+  try {
+    const contact = await findTrashedContact(req, res);
+    if (!contact) return;
+
+    await removeContactForever(contact);
+    res.json({ message: "Contact deleted permanently" });
+  } catch (err) {
+    res.status(500).json({ message: "Could not delete contact permanently" });
   }
 };
