@@ -83,7 +83,7 @@ export default function ContactDetails() {
   });
 
   const refreshLists = () => {
-    ["contacts", "contactStats", "tags", "dashboard", "trash"].forEach((key) =>
+    ["contacts", "contactStats", "tags", "dashboard", "trash", "followups"].forEach((key) =>
       queryClient.invalidateQueries({ queryKey: [key] })
     );
   };
@@ -115,7 +115,7 @@ export default function ContactDetails() {
       setFollowupNote("");
       setFollowupDueAt("");
       setShowFollowupForm(false);
-      queryClient.invalidateQueries({ queryKey: ["followups", id] });
+      queryClient.invalidateQueries({ queryKey: ["followups"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
     },
   });
@@ -123,7 +123,7 @@ export default function ContactDetails() {
   const toggleDoneMutation = useMutation({
     mutationFn: toggleFollowupDone,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["followups", id] });
+      queryClient.invalidateQueries({ queryKey: ["followups"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
     },
   });
@@ -138,7 +138,7 @@ export default function ContactDetails() {
       setEditingFollowupId(null);
       setFollowupNote("");
       setFollowupDueAt("");
-      queryClient.invalidateQueries({ queryKey: ["followups", id] });
+      queryClient.invalidateQueries({ queryKey: ["followups"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
     },
   });
@@ -146,7 +146,7 @@ export default function ContactDetails() {
   const deleteFollowupMutation = useMutation({
     mutationFn: deleteFollowup,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["followups", id] });
+      queryClient.invalidateQueries({ queryKey: ["followups"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
     },
   });

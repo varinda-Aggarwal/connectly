@@ -1,6 +1,7 @@
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { LayoutDashboard, Users, UserPlus, Star, Trash2, LogOut, Sprout } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
+import NotificationBell from "./NotificationBell";
 
 const links = [
   {
@@ -101,14 +102,17 @@ export default function AppLayout() {
             <p className="text-sm text-ink/70">Let's keep your connections strong.</p>
           </div>
 
-          <button
-            onClick={handleLogout}
-            title="Logout"
-            aria-label="Logout"
-            className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-red-500 shadow-sm transition hover:bg-red-50"
-          >
-            <LogOut size={18} />
-          </button>
+          <div className="flex items-center gap-3">
+            <NotificationBell />
+            <button
+              onClick={handleLogout}
+              title="Logout"
+              aria-label="Logout"
+              className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-red-500 shadow-sm transition hover:bg-red-50"
+            >
+              <LogOut size={18} />
+            </button>
+          </div>
         </header>
 
         <main className="min-w-0 flex-1 p-8 pb-16">

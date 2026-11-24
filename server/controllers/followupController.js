@@ -22,7 +22,9 @@ export const getFollowups = async (req, res) => {
       };
     }
 
-    const followups = await Followup.find(filter).sort({ isDone: 1, dueAt: 1 });
+    const followups = await Followup.find(filter)
+      .populate({ path: "contactId", select: "name photoUrl" })
+      .sort({ isDone: 1, dueAt: 1 });
     res.json(followups);
   } catch (err) {
     res.status(500).json({ message: "Could not fetch follow-ups" });
