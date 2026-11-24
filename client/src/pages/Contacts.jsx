@@ -104,7 +104,7 @@ function RowMenu({ contact, onDelete }) {
             }}
             className="flex w-full items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50"
           >
-            <Trash2 size={16} /> Delete
+            <Trash2 size={16} /> Move to Trash
           </button>
         </div>
       )}
@@ -423,13 +423,13 @@ export default function Contacts() {
       {toDelete && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
           <div className="w-full max-w-sm rounded-2xl bg-card p-6 shadow-xl">
-            <h3 className="font-serif text-xl font-semibold text-ink">Delete contact?</h3>
+            <h3 className="font-serif text-xl font-semibold text-ink">Move to Trash?</h3>
             <p className="mt-2 text-sm text-muted">
-              {toDelete.name} will be removed from your contacts. This cannot be undone.
+              {toDelete.name} will be moved to Trash. You can restore it within 30 days.
             </p>
             {deleteMutation.isError && (
               <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">
-                Could not delete the contact. Please try again.
+                Could not move the contact to Trash. Please try again.
               </p>
             )}
             <div className="mt-6 flex justify-end gap-3">
@@ -444,7 +444,7 @@ export default function Contacts() {
                 disabled={deleteMutation.isPending}
                 className="rounded-xl bg-red-500 px-4 py-2 text-sm font-semibold text-white hover:bg-red-600 disabled:opacity-60"
               >
-                {deleteMutation.isPending ? "Deleting..." : "Delete"}
+                {deleteMutation.isPending ? "Moving..." : "Move to Trash"}
               </button>
             </div>
           </div>

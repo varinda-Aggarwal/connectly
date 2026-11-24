@@ -35,3 +35,18 @@ export const updateContact = async (id, formData) => {
   const { data } = await api.put(`/contacts/${id}`, formData);
   return data;
 };
+
+export const fetchTrash = async () => {
+  const { data } = await api.get("/contacts/trash");
+  return data;
+};
+
+export const restoreContact = async (id) => {
+  const { data } = await api.patch(`/contacts/${id}/restore`);
+  return data;
+};
+
+export const permanentDeleteContact = async (id) => {
+  const { data } = await api.delete(`/contacts/${id}/permanent`);
+  return data;
+};
