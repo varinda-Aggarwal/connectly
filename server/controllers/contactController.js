@@ -2,6 +2,20 @@ import mongoose from "mongoose";
 import Contact from "../models/Contact.js";
 import Followup from "../models/Followup.js";
 import { deleteFromCloudinary } from "../middleware/upload.js";
+import {
+  findDuplicates,
+  loadContactsForCheck,
+  normalizeName,
+  normalizePhone,
+} from "../utils/duplicateCheck.js";
+
+const duplicateMessage = (dup) => {
+  if (dup.inTrash) return "A matching contact is in your Trash";
+  if (dup.reason === "email") return "A contact with this email already exists";
+  if (dup.reason === "name-phone") return "A contact with the same name and phone number already exists";
+  if (dup.reason === "phone") return "This phone number is already saved for another contact";
+  return "A contact with this name already exists";
+};
 
 const ALLOWED_SORT = ["createdAt", "name", "company"];
 
@@ -15,8 +29,16 @@ const escapeRegex = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 export const createContact = async (req, res) => {
   try {
-    const { name, email, phone, company, designation, tags, notes } = req.body;
+    const { name, email, phone, company, designation, tags, notes, force } = req.body;
     const photo = req.uploadedPhoto;
+
+    const existingContacts = await loadContactsForCheck(req.user._id);
+    const dup = findDuplicates(existingContacts, { name, email, phone });
+    if (dup.level === "block" || (dup.level === "warn" && force !== "true")) {
+      // photo Cloudinary par upload ho chuki hai, contact save nahi hoga to orphan na rahe
+      if (photo) await deleteFromCloudinary(photo.publicId);
+      return res.status(409).json({ message: duplicateMessage(dup), ...dup });
+    }
 
     const contact = await Contact.create({
       userId: req.user._id,
@@ -119,8 +141,23 @@ export const updateContact = async (req, res) => {
       return;
     }
 
-    const { name, email, phone, company, designation, tags, notes, removePhoto } = req.body;
+    const { name, email, phone, company, designation, tags, notes, removePhoto, force } = req.body;
     const oldPublicId = contact.photoPublicId;
+
+    // sirf tab check karo jab name, email ya phone badla ho, warna notes edit par bhi warning aati rahegi
+    const unchanged =
+      normalizeName(name) === normalizeName(contact.name) &&
+      String(email || "").trim().toLowerCase() === String(contact.email || "").toLowerCase() &&
+      normalizePhone(phone) === normalizePhone(contact.phone);
+
+    if (!unchanged) {
+      const existingContacts = await loadContactsForCheck(req.user._id);
+      const dup = findDuplicates(existingContacts, { name, email, phone }, contact._id);
+      if (dup.level === "block" || (dup.level === "warn" && force !== "true")) {
+        if (req.uploadedPhoto) await deleteFromCloudinary(req.uploadedPhoto.publicId);
+        return res.status(409).json({ message: duplicateMessage(dup), ...dup });
+      }
+    }
 
     contact.name = name;
     contact.email = email || undefined;
