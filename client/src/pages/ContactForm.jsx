@@ -2,8 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Camera, CheckCircle2, Trash2, X } from "lucide-react";
-import { createContact, fetchContact, updateContact } from "../api/contacts";
+import { ArrowLeft, Camera, CheckCircle2, Info, Trash2, X } from "lucide-react";
+import { createContact, fetchContact, restoreContact, updateContact } from "../api/contacts";
 
 const MAX_SIZE = 2 * 1024 * 1024; // backend ki limit ke barabar
 const TYPES = ["image/jpeg", "image/png", "image/webp"];
@@ -38,6 +38,7 @@ export default function ContactForm() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const fileRef = useRef(null);
+  const lastFormData = useRef(null);
 
   const {
     register,
@@ -160,12 +161,35 @@ export default function ContactForm() {
     if (photoFile) fd.append("photo", photoFile);
     else if (removePhoto) fd.append("removePhoto", "true");
 
+    lastFormData.current = fd;
     mutation.mutate(fd);
   };
 
-  const serverError = mutation.isError
-    ? mutation.error?.response?.data?.message || "Could not save the contact. Please try again."
-    : "";
+  const errData = mutation.isError ? mutation.error?.response?.data : null;
+  const dup = errData?.level ? errData : null;
+  const serverError =
+    mutation.isError && !dup
+      ? errData?.message || "Could not save the contact. Please try again."
+      : "";
+
+  // warning par "Add anyway": wahi form data force flag ke saath dobara bhejo
+  const addAnyway = () => {
+    const fd = lastFormData.current;
+    if (!fd) return;
+    fd.set("force", "true");
+    mutation.mutate(fd);
+  };
+
+  // trash wale match ko wapas laao aur uska page kholo
+  const restoreMutation = useMutation({
+    mutationFn: restoreContact,
+    onSuccess: (contact) => {
+      ["contacts", "contactStats", "tags", "dashboard", "trash"].forEach((key) =>
+        queryClient.invalidateQueries({ queryKey: [key] })
+      );
+      navigate(`/contacts/${contact._id}`);
+    },
+  });
 
   return (
     <div className="mx-auto max-w-3xl">
@@ -335,6 +359,74 @@ export default function ContactForm() {
               />
             </Field>
           </div>
+
+          {dup && (
+            <div
+              className={`rounded-xl border p-4 ${
+                dup.level === "block" ? "border-red-200 bg-red-50" : "border-amber-200 bg-amber-50"
+              }`}
+            >
+              <div className="flex items-start gap-3">
+                <Info
+                  size={18}
+                  className={`mt-0.5 shrink-0 ${dup.level === "block" ? "text-red-500" : "text-amber-600"}`}
+                />
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium text-ink">
+                    {dup.level === "block" ? "Duplicate contact" : "Possible duplicate contact"}
+                  </p>
+                  <p className="mt-0.5 text-sm text-ink/80">{dup.message}</p>
+
+                  <div className="mt-3 rounded-lg bg-white/70 px-3 py-2">
+                    <p className="text-sm font-medium text-ink">{dup.contact.name}</p>
+                    <p className="text-xs text-muted">
+                      {[dup.contact.email, dup.contact.phone, dup.contact.company]
+                        .filter(Boolean)
+                        .join(" · ") || "No details"}
+                    </p>
+                  </div>
+
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {dup.inTrash ? (
+                      <button
+                        type="button"
+                        onClick={() => restoreMutation.mutate(dup.contact._id)}
+                        disabled={restoreMutation.isPending}
+                        className="rounded-xl bg-primary px-4 py-2 text-xs font-semibold text-white transition hover:bg-primary-dark disabled:opacity-60"
+                      >
+                        {restoreMutation.isPending ? "Restoring..." : "Restore it"}
+                      </button>
+                    ) : (
+                      <Link
+                        to={`/contacts/${dup.contact._id}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="rounded-xl border border-line bg-white px-4 py-2 text-xs font-medium text-ink transition hover:bg-primary-soft"
+                      >
+                        View existing
+                      </Link>
+                    )}
+                    {dup.level === "warn" && (
+                      <button
+                        type="button"
+                        onClick={addAnyway}
+                        disabled={mutation.isPending}
+                        className="rounded-xl border border-line bg-white px-4 py-2 text-xs font-medium text-ink transition hover:bg-primary-soft disabled:opacity-60"
+                      >
+                        {isEdit ? "Save anyway" : "Add anyway"}
+                      </button>
+                    )}
+                  </div>
+
+                  {restoreMutation.isError && (
+                    <p className="mt-2 text-xs text-red-600">
+                      {restoreMutation.error?.response?.data?.message || "Could not restore the contact"}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
 
           {serverError && (
             <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{serverError}</p>

@@ -7,6 +7,7 @@ import contactRoutes from "./routes/contactRoutes.js";
 import dashboardRoutes from "./routes/dashboardRoutes.js";
 import followupRoutes from "./routes/followupRoutes.js"; 
 import { notFound, errorHandler } from "./middleware/errorHandler.js";
+import { purgeExpiredTrash } from "./controllers/contactController.js";
 
 const app = express();
 
@@ -24,6 +25,17 @@ app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
 
+const runTrashPurge = async () => {
+  try {
+    const removed = await purgeExpiredTrash();
+    if (removed) console.log(`Trash purge: ${removed} expired contact(s) removed`);
+  } catch (err) {
+    console.error("Trash purge failed:", err.message);
+  }
+};
+
 connectDB().then(() => {
   app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+  runTrashPurge(); // server start par
+  setInterval(runTrashPurge, 24 * 60 * 60 * 1000); // uske baad roz ek baar
 });
