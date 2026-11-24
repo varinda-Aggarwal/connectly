@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import {
   ArrowRight,
+  Bell,
   CalendarClock,
   ChevronRight,
   Contact,
@@ -110,9 +111,40 @@ function followupLabel(dueAt) {
 
 function FollowupsCard({ followups }) {
   const [showAll, setShowAll] = useState(false);
+  const [notificationPermission, setNotificationPermission] = useState(() =>
+    "Notification" in window ? Notification.permission : "unsupported"
+  );
   const f = followups ?? { dueToday: 0, upcoming: 0, overdue: 0, items: [] };
   const items = f.items ?? [];
   const visible = showAll ? items : items.slice(0, 3);
+
+  useEffect(() => {
+    if (!("Notification" in window) || Notification.permission !== "granted") return;
+
+    items.forEach((item) => {
+      const due = new Date(item.dueAt);
+      const startToday = new Date();
+      startToday.setHours(0, 0, 0, 0);
+      const startTomorrow = new Date(startToday);
+      startTomorrow.setDate(startTomorrow.getDate() + 1);
+
+      if (due < startTomorrow) {
+        const notificationKey = `followup-notified-${item._id}-${due.toISOString().slice(0, 10)}`;
+        if (!sessionStorage.getItem(notificationKey)) {
+          new Notification(due < startToday ? "Overdue follow-up" : "Follow-up due today", {
+            body: `${item.contact?.name ?? "Contact"}: ${item.note}`,
+          });
+          sessionStorage.setItem(notificationKey, "1");
+        }
+      }
+    });
+  }, [items]);
+
+  const enableNotifications = async () => {
+    if (!("Notification" in window)) return;
+    const permission = await Notification.requestPermission();
+    setNotificationPermission(permission);
+  };
 
   return (
     <div className="rounded-2xl border border-line bg-card p-6 shadow-sm">
@@ -121,9 +153,19 @@ function FollowupsCard({ followups }) {
           <h2 className="font-serif text-xl font-semibold text-ink">Upcoming Follow-ups</h2>
           <p className="mt-1 text-xs text-muted">People you plan to reconnect with.</p>
         </div>
-        <div className="rounded-xl bg-lavender/60 p-2.5 text-accent">
-          <CalendarClock size={20} />
-        </div>
+        <button
+          type="button"
+          onClick={enableNotifications}
+          disabled={notificationPermission === "unsupported" || notificationPermission === "granted"}
+          title={
+            notificationPermission === "granted"
+              ? "Browser reminders enabled"
+              : "Enable browser reminders"
+          }
+          className="rounded-xl bg-lavender/60 p-2.5 text-accent disabled:cursor-default"
+        >
+          <Bell size={20} />
+        </button>
       </div>
 
       <div className="mt-4 grid grid-cols-3 gap-3">

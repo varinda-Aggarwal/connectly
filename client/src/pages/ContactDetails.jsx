@@ -1,8 +1,26 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Briefcase, Building2, Mail, Pencil, Phone, Star, Trash2 } from "lucide-react";
+import {
+  ArrowLeft,
+  Briefcase,
+  Building2,
+  CalendarClock,
+  Check,
+  Mail,
+  Pencil,
+  Phone,
+  Plus,
+  Star,
+  Trash2,
+} from "lucide-react";
 import { deleteContact, fetchContact, toggleFavourite } from "../api/contacts";
+import {
+  createFollowup,
+  deleteFollowup,
+  fetchFollowups,
+  toggleFollowupDone,
+} from "../api/followups";
 
 function InfoRow({ icon: Icon, label, children }) {
   return (
@@ -40,6 +58,9 @@ export default function ContactDetails() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [showFollowupForm, setShowFollowupForm] = useState(false);
+  const [followupNote, setFollowupNote] = useState("");
+  const [followupDueAt, setFollowupDueAt] = useState("");
 
   const {
     data: contact,
@@ -49,6 +70,14 @@ export default function ContactDetails() {
   } = useQuery({
     queryKey: ["contact", id],
     queryFn: () => fetchContact(id),
+  });
+
+  const {
+    data: followups = [],
+    isLoading: followupsLoading,
+  } = useQuery({
+    queryKey: ["followups", id],
+    queryFn: () => fetchFollowups(id),
   });
 
   const refreshLists = () => {
@@ -72,6 +101,47 @@ export default function ContactDetails() {
       navigate("/contacts");
     },
   });
+
+  const createFollowupMutation = useMutation({
+    mutationFn: () =>
+      createFollowup({
+        contactId: id,
+        note: followupNote,
+        dueAt: followupDueAt,
+      }),
+    onSuccess: () => {
+      setFollowupNote("");
+      setFollowupDueAt("");
+      setShowFollowupForm(false);
+      queryClient.invalidateQueries({ queryKey: ["followups", id] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+    },
+  });
+
+  const toggleDoneMutation = useMutation({
+    mutationFn: toggleFollowupDone,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["followups", id] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+    },
+  });
+
+  const deleteFollowupMutation = useMutation({
+    mutationFn: deleteFollowup,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["followups", id] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+    },
+  });
+
+  const formatFollowupDate = (dueAt) =>
+    new Date(dueAt).toLocaleString("en-IN", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    });
 
   return (
     <div className="mx-auto max-w-3xl">
@@ -201,6 +271,120 @@ export default function ContactDetails() {
               </div>
             ) : (
               <p className="text-sm text-muted">No tags added</p>
+            )}
+          </div>
+
+          {/* Follow-ups */}
+          <div className="border-t border-line p-6">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-medium text-ink">Follow-ups</p>
+                <p className="mt-0.5 text-xs text-muted">Plan and complete your next conversations.</p>
+              </div>
+              <button
+                onClick={() => setShowFollowupForm((visible) => !visible)}
+                className="flex items-center gap-1.5 rounded-xl bg-primary px-3 py-2 text-sm font-semibold text-white hover:bg-primary-dark"
+              >
+                <Plus size={16} /> Add
+              </button>
+            </div>
+
+            {showFollowupForm && (
+              <form
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  createFollowupMutation.mutate();
+                }}
+                className="mt-4 rounded-xl bg-primary-soft/40 p-4"
+              >
+                <label className="block text-xs font-medium text-ink">
+                  Reminder note
+                  <input
+                    value={followupNote}
+                    onChange={(event) => setFollowupNote(event.target.value)}
+                    maxLength={200}
+                    required
+                    placeholder="Call to discuss the project"
+                    className="mt-1.5 w-full rounded-xl border border-line bg-card px-3 py-2.5 text-sm text-ink outline-none focus:border-primary"
+                  />
+                </label>
+                <label className="mt-3 block text-xs font-medium text-ink">
+                  Date and time
+                  <input
+                    type="datetime-local"
+                    value={followupDueAt}
+                    onChange={(event) => setFollowupDueAt(event.target.value)}
+                    required
+                    className="mt-1.5 w-full rounded-xl border border-line bg-card px-3 py-2.5 text-sm text-ink outline-none focus:border-primary"
+                  />
+                </label>
+                {createFollowupMutation.isError && (
+                  <p className="mt-3 text-sm text-red-600">Could not add the follow-up.</p>
+                )}
+                <div className="mt-4 flex justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowFollowupForm(false)}
+                    className="rounded-xl px-3 py-2 text-sm text-muted hover:bg-card"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={createFollowupMutation.isPending}
+                    className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary-dark disabled:opacity-60"
+                  >
+                    {createFollowupMutation.isPending ? "Saving..." : "Save follow-up"}
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {followupsLoading ? (
+              <div className="mt-4 h-16 animate-pulse rounded-xl bg-line/60" />
+            ) : followups.length === 0 ? (
+              <div className="mt-4 rounded-xl border border-dashed border-line py-7 text-center">
+                <CalendarClock className="mx-auto text-primary" size={24} />
+                <p className="mt-2 text-sm text-muted">No follow-ups scheduled</p>
+              </div>
+            ) : (
+              <ul className="mt-4 space-y-2">
+                {followups.map((followup) => (
+                  <li
+                    key={followup._id}
+                    className={`flex items-start gap-3 rounded-xl border border-line p-3 ${
+                      followup.isDone ? "bg-line/30 opacity-70" : "bg-card"
+                    }`}
+                  >
+                    <button
+                      onClick={() => toggleDoneMutation.mutate(followup._id)}
+                      disabled={toggleDoneMutation.isPending}
+                      aria-label={followup.isDone ? "Mark follow-up incomplete" : "Mark follow-up complete"}
+                      className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition ${
+                        followup.isDone
+                          ? "border-primary bg-primary text-white"
+                          : "border-muted/50 text-transparent hover:border-primary"
+                      }`}
+                    >
+                      <Check size={13} />
+                    </button>
+                    <div className="min-w-0 flex-1">
+                      <p className={`text-sm text-ink ${followup.isDone ? "line-through" : ""}`}>
+                        {followup.note}
+                      </p>
+                      <p className="mt-1 text-xs text-muted">{formatFollowupDate(followup.dueAt)}</p>
+                    </div>
+                    <button
+                      onClick={() => deleteFollowupMutation.mutate(followup._id)}
+                      disabled={deleteFollowupMutation.isPending}
+                      aria-label="Delete follow-up"
+                      className="rounded-lg p-1.5 text-muted hover:bg-red-50 hover:text-red-600"
+                    >
+                      <Trash2 size={15} />
+                    </button>
+                  </li>
+                ))}
+              </ul>
             )}
           </div>
 
