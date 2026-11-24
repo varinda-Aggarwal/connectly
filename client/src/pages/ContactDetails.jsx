@@ -20,6 +20,7 @@ import {
   deleteFollowup,
   fetchFollowups,
   toggleFollowupDone,
+  updateFollowup,
 } from "../api/followups";
 
 function InfoRow({ icon: Icon, label, children }) {
@@ -61,6 +62,7 @@ export default function ContactDetails() {
   const [showFollowupForm, setShowFollowupForm] = useState(false);
   const [followupNote, setFollowupNote] = useState("");
   const [followupDueAt, setFollowupDueAt] = useState("");
+  const [editingFollowupId, setEditingFollowupId] = useState(null);
 
   const {
     data: contact,
@@ -126,6 +128,21 @@ export default function ContactDetails() {
     },
   });
 
+  const updateFollowupMutation = useMutation({
+    mutationFn: () =>
+      updateFollowup(editingFollowupId, {
+        note: followupNote,
+        dueAt: followupDueAt,
+      }),
+    onSuccess: () => {
+      setEditingFollowupId(null);
+      setFollowupNote("");
+      setFollowupDueAt("");
+      queryClient.invalidateQueries({ queryKey: ["followups", id] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+    },
+  });
+
   const deleteFollowupMutation = useMutation({
     mutationFn: deleteFollowup,
     onSuccess: () => {
@@ -142,6 +159,12 @@ export default function ContactDetails() {
       hour: "numeric",
       minute: "2-digit",
     });
+
+  const toDateTimeInputValue = (dueAt) => {
+    const date = new Date(dueAt);
+    date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
+    return date.toISOString().slice(0, 16);
+  };
 
   return (
     <div className="mx-auto max-w-3xl">
@@ -352,7 +375,7 @@ export default function ContactDetails() {
                 {followups.map((followup) => (
                   <li
                     key={followup._id}
-                    className={`flex items-start gap-3 rounded-xl border border-line p-3 ${
+                    className={`flex flex-wrap items-start gap-3 rounded-xl border border-line p-3 ${
                       followup.isDone ? "bg-line/30 opacity-70" : "bg-card"
                     }`}
                   >
@@ -375,6 +398,19 @@ export default function ContactDetails() {
                       <p className="mt-1 text-xs text-muted">{formatFollowupDate(followup.dueAt)}</p>
                     </div>
                     <button
+                      onClick={() => {
+                        setEditingFollowupId(followup._id);
+                        setFollowupNote(followup.note);
+                        setFollowupDueAt(toDateTimeInputValue(followup.dueAt));
+                        updateFollowupMutation.reset();
+                      }}
+                      disabled={Boolean(editingFollowupId)}
+                      aria-label="Edit follow-up"
+                      className="rounded-lg p-1.5 text-muted hover:bg-primary-soft hover:text-primary-dark disabled:opacity-50"
+                    >
+                      <Pencil size={15} />
+                    </button>
+                    <button
                       onClick={() => deleteFollowupMutation.mutate(followup._id)}
                       disabled={deleteFollowupMutation.isPending}
                       aria-label="Delete follow-up"
@@ -382,6 +418,59 @@ export default function ContactDetails() {
                     >
                       <Trash2 size={15} />
                     </button>
+                    {editingFollowupId === followup._id && (
+                      <form
+                        onSubmit={(event) => {
+                          event.preventDefault();
+                          updateFollowupMutation.mutate();
+                        }}
+                        className="w-full space-y-3 border-t border-line pt-3"
+                      >
+                        <label className="block text-xs font-medium text-ink">
+                          Reminder note
+                          <input
+                            value={followupNote}
+                            onChange={(event) => setFollowupNote(event.target.value)}
+                            maxLength={200}
+                            required
+                            className="mt-1.5 w-full rounded-xl border border-line bg-card px-3 py-2.5 text-sm text-ink outline-none focus:border-primary"
+                          />
+                        </label>
+                        <label className="block text-xs font-medium text-ink">
+                          Date and time
+                          <input
+                            type="datetime-local"
+                            value={followupDueAt}
+                            onChange={(event) => setFollowupDueAt(event.target.value)}
+                            required
+                            className="mt-1.5 w-full rounded-xl border border-line bg-card px-3 py-2.5 text-sm text-ink outline-none focus:border-primary"
+                          />
+                        </label>
+                        {updateFollowupMutation.isError && (
+                          <p className="text-sm text-red-600">Could not update the follow-up.</p>
+                        )}
+                        <div className="flex justify-end gap-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingFollowupId(null);
+                              setFollowupNote("");
+                              setFollowupDueAt("");
+                            }}
+                            className="rounded-xl px-3 py-2 text-sm text-muted hover:bg-primary-soft"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type="submit"
+                            disabled={updateFollowupMutation.isPending}
+                            className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary-dark disabled:opacity-60"
+                          >
+                            {updateFollowupMutation.isPending ? "Saving..." : "Save changes"}
+                          </button>
+                        </div>
+                      </form>
+                    )}
                   </li>
                 ))}
               </ul>

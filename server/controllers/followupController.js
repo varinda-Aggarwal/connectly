@@ -5,15 +5,21 @@ import Followup from "../models/Followup.js";
 export const getFollowups = async (req, res) => {
   try {
     const { contactId } = req.query;
+    const activeContacts = { userId: req.user._id, isDeleted: { $ne: true } };
     const filter = { userId: req.user._id };
 
     if (contactId) {
       if (!mongoose.isValidObjectId(contactId)) {
         return res.status(400).json({ message: "Invalid contact id" });
       }
+      const contact = await Contact.findOne({ ...activeContacts, _id: contactId }).select("_id");
+      if (!contact) return res.status(404).json({ message: "Contact not found" });
       filter.contactId = contactId;
     } else {
       filter.isDone = false;
+      filter.contactId = {
+        $in: await Contact.find(activeContacts).distinct("_id"),
+      };
     }
 
     const followups = await Followup.find(filter).sort({ isDone: 1, dueAt: 1 });
@@ -38,7 +44,11 @@ export const createFollowup = async (req, res) => {
       return res.status(400).json({ message: "Enter a valid date and time" });
     }
 
-    const contact = await Contact.findOne({ _id: contactId, userId: req.user._id });
+    const contact = await Contact.findOne({
+      _id: contactId,
+      userId: req.user._id,
+      isDeleted: { $ne: true },
+    });
     if (!contact) return res.status(404).json({ message: "Contact not found" });
 
     const followup = await Followup.create({
@@ -72,6 +82,40 @@ export const toggleFollowupDone = async (req, res) => {
     const followup = await findOwnFollowup(req, res);
     if (!followup) return;
     followup.isDone = !followup.isDone;
+    await followup.save();
+    res.json(followup);
+  } catch (err) {
+    res.status(500).json({ message: "Could not update follow-up" });
+  }
+};
+
+export const updateFollowup = async (req, res) => {
+  try {
+    const followup = await findOwnFollowup(req, res);
+    if (!followup) return;
+
+    const { note, dueAt } = req.body;
+    if (typeof note !== "string" || !note.trim()) {
+      return res.status(400).json({ message: "Note is required" });
+    }
+    if (note.trim().length > 200) {
+      return res.status(400).json({ message: "Note must be 200 characters or less" });
+    }
+
+    const due = new Date(dueAt);
+    if (Number.isNaN(due.getTime())) {
+      return res.status(400).json({ message: "Enter a valid date and time" });
+    }
+
+    const contact = await Contact.findOne({
+      _id: followup.contactId,
+      userId: req.user._id,
+      isDeleted: { $ne: true },
+    }).select("_id");
+    if (!contact) return res.status(404).json({ message: "Contact not found" });
+
+    followup.note = note.trim();
+    followup.dueAt = due;
     await followup.save();
     res.json(followup);
   } catch (err) {
