@@ -4,29 +4,60 @@ import { Bell, CalendarClock, ChevronRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import { fetchFollowups } from "../api/followups";
 
-function getFollowupStatus(dueAt) {
-  const due = new Date(dueAt);
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const tomorrow = new Date(today);
-  tomorrow.setDate(tomorrow.getDate() + 1);
+const DAY_MS = 24 * 60 * 60 * 1000;
 
-  if (due < today) return { label: "Overdue", tone: "text-red-600", urgent: true };
-  if (due < tomorrow) return { label: "Due today", tone: "text-red-500", urgent: true };
-  return {
-    label: due.toLocaleString("en-IN", {
+const startOfDay = (value) => {
+  const d = new Date(value);
+  d.setHours(0, 0, 0, 0);
+  return d;
+};
+
+// follow-up abhi kis stage mein hai: overdue, now, today, tomorrow, in2 ya later
+function getStage(dueAt, nowMs) {
+  const due = new Date(dueAt);
+  const dayDiff = Math.round((startOfDay(due) - startOfDay(nowMs)) / DAY_MS);
+  if (dayDiff < 0) return "overdue";
+  if (dayDiff === 0) return due.getTime() <= nowMs ? "now" : "today";
+  if (dayDiff === 1) return "tomorrow";
+  if (dayDiff === 2) return "in2";
+  return "later";
+}
+
+const STAGES = {
+  overdue: { label: "Overdue", tone: "text-red-600", urgent: true, title: "Overdue follow-up" },
+  now: { label: "Due now", tone: "text-red-600", urgent: true, title: "Follow-up is due now" },
+  today: { label: "Due today", tone: "text-red-500", urgent: true, title: "Follow-up due today" },
+  tomorrow: { label: "Tomorrow", tone: "text-accent", urgent: true, title: "Follow-up tomorrow" },
+  in2: { label: "In 2 days", tone: "text-accent", urgent: true, title: "Follow-up in 2 days" },
+  later: { label: "", tone: "text-muted", urgent: false, title: "" },
+};
+
+function getFollowupStatus(dueAt, nowMs) {
+  const stage = getStage(dueAt, nowMs);
+  const config = STAGES[stage];
+  const due = new Date(dueAt);
+  const time = due.toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit" });
+
+  let label;
+  if (stage === "later") {
+    label = due.toLocaleString("en-IN", {
       day: "numeric",
       month: "short",
       hour: "numeric",
       minute: "2-digit",
-    }),
-    tone: "text-muted",
-    urgent: false,
-  };
+    });
+  } else if (stage === "overdue") {
+    label = `Overdue · ${due.toLocaleDateString("en-IN", { day: "numeric", month: "short" })}`;
+  } else {
+    label = `${config.label} · ${time}`;
+  }
+
+  return { ...config, stage, label };
 }
 
 export default function NotificationBell() {
   const [isOpen, setIsOpen] = useState(false);
+  const [now, setNow] = useState(() => Date.now());
   const [permission, setPermission] = useState(() =>
     "Notification" in window ? Notification.permission : "unsupported"
   );
@@ -34,8 +65,15 @@ export default function NotificationBell() {
   const { data: followups = [], isLoading, isError } = useQuery({
     queryKey: ["followups"],
     queryFn: () => fetchFollowups(),
-    refetchInterval: 60_000,
+    refetchInterval: 30_000,
+    refetchOnWindowFocus: true,
   });
+
+  // har 30 second mein "abhi ka time" badlo, taaki badge aur alerts bina refresh ke badlein
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 30_000);
+    return () => clearInterval(id);
+  }, []);
 
   useEffect(() => {
     const closeOnOutsideClick = (event) => {
@@ -53,29 +91,25 @@ export default function NotificationBell() {
     };
   }, []);
 
+  // desktop alert: har stage par ek baar (2 din pehle, kal, aaj, time aane par, overdue)
   useEffect(() => {
     if (!("Notification" in window) || Notification.permission !== "granted") return;
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-
     followups.forEach((item) => {
-      const due = new Date(item.dueAt);
-      if (due >= tomorrow) return;
+      const status = getFollowupStatus(item.dueAt, now);
+      if (!status.urgent) return;
 
-      const notificationKey = `followup-notified-${item._id}-${due.toISOString().slice(0, 10)}`;
-      if (sessionStorage.getItem(notificationKey)) return;
+      const key = `followup-alert:${item._id}:${new Date(item.dueAt).toISOString()}:${status.stage}`;
+      if (localStorage.getItem(key)) return;
 
-      new Notification(due < today ? "Overdue follow-up" : "Follow-up due today", {
+      new Notification(status.title, {
         body: `${item.contactId?.name ?? "Contact"}: ${item.note}`,
       });
-      sessionStorage.setItem(notificationKey, "1");
+      localStorage.setItem(key, "1");
     });
-  }, [followups, permission]);
+  }, [followups, permission, now]);
 
-  const urgentCount = followups.filter(({ dueAt }) => getFollowupStatus(dueAt).urgent).length;
+  const urgentCount = followups.filter(({ dueAt }) => getFollowupStatus(dueAt, now).urgent).length;
 
   const enableDesktopAlerts = async () => {
     if (!("Notification" in window)) return;
@@ -133,7 +167,7 @@ export default function NotificationBell() {
           )}
           {permission === "granted" && (
             <p className="border-b border-line px-4 py-2 text-xs text-primary-dark">
-              Desktop alerts are enabled for overdue and today&apos;s follow-ups.
+              Desktop alerts start 2 days before a follow-up while Connectly is open in a browser tab.
             </p>
           )}
 
@@ -153,7 +187,7 @@ export default function NotificationBell() {
             ) : (
               <ul className="divide-y divide-line">
                 {followups.slice(0, 10).map((item) => {
-                  const status = getFollowupStatus(item.dueAt);
+                  const status = getFollowupStatus(item.dueAt, now);
                   return (
                     <li key={item._id}>
                       <Link
