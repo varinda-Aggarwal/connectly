@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import {
   ArrowRight,
@@ -7,12 +7,14 @@ import {
   ChevronRight,
   Contact,
   Mail,
+  Pencil,
   Phone,
   Plus,
   Star,
   Users,
 } from "lucide-react";
 import { fetchSummary } from "../api/dashboard";
+import { updateFollowup } from "../api/followups";
 
 // donut ke slice colours
 const PALETTE = [
@@ -105,11 +107,97 @@ function followupLabel(dueAt) {
   if (due < startToday) return { text: `Overdue · ${date}`, tone: "text-red-500" };
   if (due < startTomorrow) return { text: `Today · ${time}`, tone: "text-red-400" };
   if (due < startDayAfter) return { text: `Tomorrow · ${time}`, tone: "text-accent" };
+  const startIn3Days = new Date(startToday);
+  startIn3Days.setDate(startIn3Days.getDate() + 3);
+  if (due < startIn3Days) return { text: `In 2 days · ${time}`, tone: "text-accent" };
   return { text: date, tone: "text-muted" };
+}
+
+const pad2 = (n) => String(n).padStart(2, "0");
+
+// datetime-local input ko local time mein bharne ke liye
+const toLocalInput = (iso) => {
+  const d = new Date(iso);
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}T${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+};
+
+function EditFollowupModal({ item, onClose }) {
+  const queryClient = useQueryClient();
+  const [note, setNote] = useState(item.note);
+  const [dueAt, setDueAt] = useState(toLocalInput(item.dueAt));
+  const [error, setError] = useState("");
+
+  const mutation = useMutation({
+    mutationFn: (payload) => updateFollowup(item._id, payload),
+    onSuccess: () => {
+      ["dashboard", "followups"].forEach((key) =>
+        queryClient.invalidateQueries({ queryKey: [key] })
+      );
+      onClose();
+    },
+    onError: (err) => setError(err.response?.data?.message || "Could not update the follow-up"),
+  });
+
+  const submit = (e) => {
+    e.preventDefault();
+    setError("");
+    if (!note.trim()) return setError("Note is required");
+    if (note.trim().length > 200) return setError("Note must be 200 characters or less");
+    if (!dueAt) return setError("Pick a date and time");
+    // local time ko ISO mein badal ke bhejo, warna server ke timezone se galat time ban jata hai
+    mutation.mutate({ note: note.trim(), dueAt: new Date(dueAt).toISOString() });
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+      <form onSubmit={submit} className="w-full max-w-md rounded-2xl bg-card p-6 shadow-xl">
+        <h3 className="font-serif text-xl font-semibold text-ink">Edit follow-up</h3>
+        <p className="mt-1 text-sm text-muted">With {item.contact.name}</p>
+
+        <label className="mt-5 block text-sm font-medium text-ink">Date and time</label>
+        <input
+          type="datetime-local"
+          value={dueAt}
+          onChange={(e) => setDueAt(e.target.value)}
+          className="mt-1.5 w-full rounded-xl border border-line bg-page px-3.5 py-2.5 text-sm text-ink outline-none focus:border-primary"
+        />
+
+        <label className="mt-4 block text-sm font-medium text-ink">Note</label>
+        <textarea
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          rows={3}
+          maxLength={200}
+          className="mt-1.5 w-full resize-none rounded-xl border border-line bg-page px-3.5 py-2.5 text-sm text-ink outline-none focus:border-primary"
+        />
+        <p className="mt-1 text-right text-xs text-muted">{note.length}/200</p>
+
+        {error && <p className="mt-2 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
+
+        <div className="mt-5 flex justify-end gap-3">
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-xl px-4 py-2 text-sm font-medium text-ink hover:bg-primary-soft"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={mutation.isPending}
+            className="rounded-xl bg-primary px-5 py-2 text-sm font-semibold text-white hover:bg-primary-dark disabled:opacity-60"
+          >
+            {mutation.isPending ? "Saving..." : "Save changes"}
+          </button>
+        </div>
+      </form>
+    </div>
+  );
 }
 
 function FollowupsCard({ followups }) {
   const [showAll, setShowAll] = useState(false);
+  const [editing, setEditing] = useState(null);
   const f = followups ?? { dueToday: 0, upcoming: 0, overdue: 0, items: [] };
   const items = f.items ?? [];
   const visible = showAll ? items : items.slice(0, 3);
@@ -153,10 +241,10 @@ function FollowupsCard({ followups }) {
             {visible.map((item) => {
               const label = followupLabel(item.dueAt);
               return (
-                <li key={item._id}>
+                <li key={item._id} className="flex items-center gap-1">
                   <Link
                     to={`/contacts/${item.contact._id}`}
-                    className="flex items-center gap-3 rounded-xl px-2 py-2.5 transition hover:bg-primary-soft/30"
+                    className="flex min-w-0 flex-1 items-center gap-3 rounded-xl px-2 py-2.5 transition hover:bg-primary-soft/30"
                   >
                     <Avatar contact={item.contact} />
                     <div className="min-w-0 flex-1">
@@ -166,6 +254,14 @@ function FollowupsCard({ followups }) {
                     </div>
                     <ChevronRight size={16} className="text-muted" />
                   </Link>
+                  <button
+                    onClick={() => setEditing(item)}
+                    aria-label="Edit follow-up"
+                    title="Edit follow-up"
+                    className="rounded-lg p-2 text-muted transition hover:bg-primary-soft hover:text-ink"
+                  >
+                    <Pencil size={16} />
+                  </button>
                 </li>
               );
             })}
@@ -187,6 +283,8 @@ function FollowupsCard({ followups }) {
           </div>
         </>
       )}
+
+      {editing && <EditFollowupModal item={editing} onClose={() => setEditing(null)} />}
     </div>
   );
 }
