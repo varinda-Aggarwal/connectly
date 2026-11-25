@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import Contact from "../models/Contact.js";
 import Followup from "../models/Followup.js";
+import Interaction from "../models/Interaction.js";
 import { deleteFromCloudinary } from "../middleware/upload.js";
 import {
   findDuplicates,
@@ -198,7 +199,7 @@ export const deleteContact = async (req, res) => {
     const contact = await findOwnContact(req, res);
     if (!contact) return;
 
-    // trash mein bhejo: follow-ups aur photo waise hi rehte hain, restore par wapas mil jate hain
+    // trash mein bhejo: follow-ups, interactions aur photo waise hi rehte hain, restore par wapas mil jate hain
     contact.isDeleted = true;
     contact.deletedAt = new Date();
     await contact.save();
@@ -233,10 +234,10 @@ export const getTags = async (req, res) => {
 const TRASH_DAYS = 30;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-// contact hamesha ke liye hatao: follow-ups aur Cloudinary photo ke saath
+// contact hamesha ke liye hatao: follow-ups, interactions aur Cloudinary photo ke saath
 const removeContactForever = async (contact) => {
   await Followup.deleteMany({ contactId: contact._id });
-  // Person 3 ka Interaction model aane par yahan Interaction.deleteMany bhi jodna hai
+  await Interaction.deleteMany({ contactId: contact._id });
   await deleteFromCloudinary(contact.photoPublicId);
   await contact.deleteOne();
 };

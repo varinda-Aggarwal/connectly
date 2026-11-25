@@ -1,3 +1,4 @@
+import InteractionTimeline from "../components/InteractionTimeline";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate, useParams } from "react-router-dom";
@@ -39,9 +40,9 @@ function InfoRow({ icon: Icon, label, children }) {
 
 function DetailsSkeleton() {
   return (
-    <div className="space-y-4 rounded-2xl border border-line bg-card p-6 shadow-sm">
-      <div className="flex items-center gap-5">
-        <div className="h-24 w-24 animate-pulse rounded-full bg-line/60" />
+    <div className="space-y-4 rounded-2xl border border-line bg-card p-4 shadow-sm sm:p-6">
+      <div className="flex items-center gap-4 sm:gap-5">
+        <div className="h-20 w-20 animate-pulse rounded-full bg-line/60 sm:h-24 sm:w-24" />
         <div className="flex-1 space-y-3">
           <div className="h-6 w-1/2 animate-pulse rounded-lg bg-line/60" />
           <div className="h-4 w-1/3 animate-pulse rounded-lg bg-line/60" />
@@ -199,17 +200,23 @@ export default function ContactDetails() {
       ) : (
         <div className="rounded-2xl border border-line bg-card shadow-sm">
           {/* Header */}
-          <div className="flex flex-wrap items-center gap-5 p-6">
+          <div className="flex flex-wrap items-center gap-4 p-4 sm:gap-5 sm:p-6">
             {contact.photoUrl ? (
-              <img src={contact.photoUrl} alt={contact.name} className="h-24 w-24 rounded-full object-cover" />
+              <img
+                src={contact.photoUrl}
+                alt={contact.name}
+                className="h-20 w-20 rounded-full object-cover sm:h-24 sm:w-24"
+              />
             ) : (
-              <div className="flex h-24 w-24 items-center justify-center rounded-full bg-lavender text-3xl font-semibold text-accent">
+              <div className="flex h-20 w-20 items-center justify-center rounded-full bg-lavender text-3xl font-semibold text-accent sm:h-24 sm:w-24">
                 {contact.name.charAt(0).toUpperCase()}
               </div>
             )}
 
             <div className="min-w-0 flex-1">
-              <h1 className="break-words font-serif text-3xl font-semibold text-ink">{contact.name}</h1>
+              <h1 className="break-words font-serif text-2xl font-semibold text-ink sm:text-3xl">
+                {contact.name}
+              </h1>
               <p className="mt-1 text-sm text-muted">
                 {[contact.designation, contact.company].filter(Boolean).join(" at ") || "No job details"}
               </p>
@@ -223,7 +230,7 @@ export default function ContactDetails() {
               </p>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
               <button
                 onClick={() => favMutation.mutate()}
                 disabled={favMutation.isPending}
@@ -251,7 +258,7 @@ export default function ContactDetails() {
           </div>
 
           {/* Info */}
-          <div className="grid gap-5 border-t border-line p-6 md:grid-cols-2">
+          <div className="grid gap-5 border-t border-line p-4 sm:p-6 md:grid-cols-2">
             <InfoRow icon={Mail} label="Email">
               {contact.email ? (
                 <a href={`mailto:${contact.email}`} className="hover:text-primary-dark hover:underline">
@@ -279,7 +286,7 @@ export default function ContactDetails() {
           </div>
 
           {/* Tags */}
-          <div className="border-t border-line p-6">
+          <div className="border-t border-line p-4 sm:p-6">
             <p className="mb-2 text-sm font-medium text-ink">Tags</p>
             {contact.tags?.length ? (
               <div className="flex flex-wrap gap-1.5">
@@ -298,7 +305,7 @@ export default function ContactDetails() {
           </div>
 
           {/* Follow-ups */}
-          <div className="border-t border-line p-6">
+          <div className="border-t border-line p-4 sm:p-6">
             <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="text-sm font-medium text-ink">Follow-ups</p>
@@ -306,7 +313,7 @@ export default function ContactDetails() {
               </div>
               <button
                 onClick={() => setShowFollowupForm((visible) => !visible)}
-                className="flex items-center gap-1.5 rounded-xl bg-primary px-3 py-2 text-sm font-semibold text-white hover:bg-primary-dark"
+                className="flex shrink-0 items-center gap-1.5 rounded-xl bg-primary px-3 py-2 text-sm font-semibold text-white hover:bg-primary-dark"
               >
                 <Plus size={16} /> Add
               </button>
@@ -392,7 +399,7 @@ export default function ContactDetails() {
                       <Check size={13} />
                     </button>
                     <div className="min-w-0 flex-1">
-                      <p className={`text-sm text-ink ${followup.isDone ? "line-through" : ""}`}>
+                      <p className={`break-words text-sm text-ink ${followup.isDone ? "line-through" : ""}`}>
                         {followup.note}
                       </p>
                       <p className="mt-1 text-xs text-muted">{formatFollowupDate(followup.dueAt)}</p>
@@ -478,7 +485,7 @@ export default function ContactDetails() {
           </div>
 
           {/* Notes */}
-          <div className="border-t border-line p-6">
+          <div className="border-t border-line p-4 sm:p-6">
             <p className="mb-2 text-sm font-medium text-ink">Notes</p>
             {contact.notes ? (
               <p className="whitespace-pre-wrap break-words text-sm text-ink">{contact.notes}</p>
@@ -486,6 +493,9 @@ export default function ContactDetails() {
               <p className="text-sm text-muted">No notes yet</p>
             )}
           </div>
+
+          {/* Interaction history */}
+          <InteractionTimeline contactId={contact._id} lastContactedAt={contact.lastContactedAt} />
         </div>
       )}
 
@@ -499,7 +509,7 @@ export default function ContactDetails() {
             </p>
             {deleteMutation.isError && (
               <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">
-                                Could not move the contact to Trash. Please try again.
+                Could not move the contact to Trash. Please try again.
               </p>
             )}
             <div className="mt-6 flex justify-end gap-3">

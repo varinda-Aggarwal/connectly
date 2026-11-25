@@ -234,10 +234,10 @@ export default function ContactForm() {
         <form
           onSubmit={handleSubmit(onSubmit)}
           noValidate
-          className="space-y-6 rounded-2xl border border-line bg-card p-6 shadow-sm"
+          className="space-y-6 rounded-2xl border border-line bg-card p-4 shadow-sm sm:p-6"
         >
           {/* Photo */}
-          <div className="flex items-center gap-5">
+          <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:gap-5">
             {preview ? (
               <img src={preview} alt="Contact" className="h-24 w-24 rounded-full object-cover" />
             ) : (
@@ -432,10 +432,10 @@ export default function ContactForm() {
             <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{serverError}</p>
           )}
 
-          <div className="flex justify-end gap-3 border-t border-line pt-5">
+          <div className="flex flex-col-reverse gap-3 border-t border-line pt-5 sm:flex-row sm:justify-end">
             <Link
               to="/contacts"
-              className="rounded-xl px-5 py-2.5 text-sm font-medium text-ink hover:bg-primary-soft"
+              className="rounded-xl px-5 py-2.5 text-center text-sm font-medium text-ink hover:bg-primary-soft"
             >
               Cancel
             </Link>

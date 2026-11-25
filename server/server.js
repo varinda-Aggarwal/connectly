@@ -6,6 +6,7 @@ import authRoutes from "./routes/authRoutes.js";
 import contactRoutes from "./routes/contactRoutes.js";
 import dashboardRoutes from "./routes/dashboardRoutes.js";
 import followupRoutes from "./routes/followupRoutes.js"; 
+import interactionRoutes from "./routes/interactionRoutes.js"; 
 import { notFound, errorHandler } from "./middleware/errorHandler.js";
 import { purgeExpiredTrash } from "./controllers/contactController.js";
 
@@ -19,6 +20,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/contacts", contactRoutes);
 app.use("/api/dashboard", dashboardRoutes); 
 app.use("/api/followups", followupRoutes);
+app.use("/api", interactionRoutes); 
 
 app.use(notFound);
 app.use(errorHandler);
