@@ -1,5 +1,6 @@
 import api from "./axios";
 
+
 export const fetchContacts = async (params) => {
   const { data } = await api.get("/contacts", { params });
   return data;
