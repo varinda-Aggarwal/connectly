@@ -4,23 +4,25 @@ import cors from "cors";
 import connectDB from "./config/db.js";
 import authRoutes from "./routes/authRoutes.js";
 import contactRoutes from "./routes/contactRoutes.js";
+import csvRoutes from "./routes/csvRoutes.js";
 import dashboardRoutes from "./routes/dashboardRoutes.js";
-import followupRoutes from "./routes/followupRoutes.js"; 
-import interactionRoutes from "./routes/interactionRoutes.js"; 
+import followupRoutes from "./routes/followupRoutes.js";
+import interactionRoutes from "./routes/interactionRoutes.js";
 import { notFound, errorHandler } from "./middleware/errorHandler.js";
 import { purgeExpiredTrash } from "./controllers/contactController.js";
 
 const app = express();
 
-app.use(cors({ origin: process.env.CLIENT_URL }));
+app.use(cors({ origin: process.env.CLIENT_URL, exposedHeaders: ["Content-Disposition"] }));
 app.use(express.json());
 
 app.get("/api/health", (req, res) => res.json({ status: "ok" }));
 app.use("/api/auth", authRoutes);
+app.use("/api/contacts", csvRoutes);      // contactRoutes se pehle
 app.use("/api/contacts", contactRoutes);
-app.use("/api/dashboard", dashboardRoutes); 
+app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/followups", followupRoutes);
-app.use("/api", interactionRoutes); 
+app.use("/api", interactionRoutes);
 
 app.use(notFound);
 app.use(errorHandler);
