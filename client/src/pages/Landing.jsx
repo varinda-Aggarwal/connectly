@@ -86,7 +86,7 @@ export default function Landing() {
   return (
     <div className="min-h-screen bg-page text-ink">
       <header className="sticky top-0 z-30 border-b border-line/60 bg-page/85 backdrop-blur">
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
+        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
           <a href="#home" className="flex items-center gap-2">
             <Sprout className="text-primary" size={26} />
             <span className="font-serif text-2xl font-semibold text-primary-dark">Connectly</span>
@@ -99,11 +99,11 @@ export default function Landing() {
             <a href="#about" className="hover:text-primary-dark">About</a>
           </nav>
 
-          <div className="flex items-center gap-3">
-            {user ? (
+         <div className="flex items-center gap-1 sm:gap-3">
+  {user ? (
               <Link
                 to="/dashboard"
-                className="flex items-center gap-2 rounded-xl bg-sidebar px-5 py-2.5 text-sm font-semibold text-white transition hover:opacity-90"
+                className="flex items-center gap-2 rounded-xl bg-sidebar px-4 py-2.5 sm:px-5 text-sm font-semibold text-white transition hover:opacity-90"
               >
                 Open App <ArrowRight size={16} />
               </Link>
@@ -114,7 +114,7 @@ export default function Landing() {
                 </Link>
                 <Link
                   to="/signup"
-                  className="flex items-center gap-2 rounded-xl bg-sidebar px-5 py-2.5 text-sm font-semibold text-white transition hover:opacity-90"
+                  className="flex items-center gap-2 rounded-xl bg-sidebar px-4 py-2.5 sm:px-5 text-sm font-semibold text-white transition hover:opacity-90"
                 >
                   Get Started <ArrowRight size={16} />
                 </Link>
@@ -124,77 +124,79 @@ export default function Landing() {
         </div>
       </header>
 
-      <section id="home" className="relative overflow-hidden">
-        <img src={heroBg} alt="" className="absolute inset-0 h-full w-full object-cover object-right" />
-        <div
-          className="absolute inset-0"
-          style={{
-            background:
-              "linear-gradient(to right, var(--color-page) 0%, var(--color-page) 30%, transparent 62%)",
-          }}
-        />
-        <div className="relative mx-auto flex min-h-[600px] max-w-7xl items-center px-6 py-16">
-          <div className="max-w-xl">
-            <span className="inline-flex items-center gap-2 rounded-full bg-lavender/60 px-4 py-1.5 text-xs font-medium text-accent">
-              <Sparkles size={14} /> Your Contacts · Your Network · Your Growth
-            </span>
+    <section id="home" className="relative overflow-hidden">
+  <img src={heroBg} alt="" className="absolute inset-0 h-full w-full object-cover object-right" />
+  <div className="absolute inset-0 bg-page/85 md:hidden" />
+  <div
+    className="absolute inset-0 hidden md:block"
+    style={{
+      background:
+        "linear-gradient(to right, var(--color-page) 0%, var(--color-page) 30%, transparent 62%)",
+    }}
+  />
+  <div className="relative mx-auto flex min-h-[520px] max-w-7xl items-center px-4 py-12 sm:px-6 md:min-h-[600px] md:py-16">
+    <div className="max-w-xl">
+      <span className="inline-flex items-center gap-2 rounded-full bg-lavender/60 px-4 py-1.5 text-xs font-medium text-accent">
+        <Sparkles size={14} /> Your Contacts · Your Network · Your Growth
+      </span>
 
-            <h1 className="mt-6 font-serif text-5xl font-semibold leading-[1.1] text-ink lg:text-6xl">
-              Manage Your
-              <br />
-              <span className="text-accent">Contacts Smarter.</span>
-            </h1>
+     <h1 className="mt-6 font-serif text-3xl font-semibold leading-[1.1] text-ink sm:text-5xl lg:text-6xl">
 
-            <p className="mt-6 max-w-md text-base font-medium leading-relaxed text-ink/80">
-              Connectly helps you organize your contacts, search and filter them in seconds, and keep
-              your favourite people close, all in one place. Simple, powerful and built for your growth.
-            </p>
+        Manage Your
+        <br />
+        <span className="text-accent">Contacts Smarter.</span>
+      </h1>
 
-            <div className="mt-8 flex flex-wrap items-center gap-4">
-              <Link
-                to={startLink}
-                className="flex items-center gap-2 rounded-xl bg-sidebar px-7 py-3.5 text-sm font-semibold text-white transition hover:opacity-90"
-              >
-                Get Started Free <ArrowRight size={16} />
-              </Link>
-              <a
-                href="#features"
-                className="rounded-xl border border-line bg-white/70 px-7 py-3.5 text-sm font-semibold text-ink transition hover:bg-white"
-              >
-                Explore Features
-              </a>
-            </div>
-          </div>
+      <p className="mt-6 max-w-md text-base font-medium leading-relaxed text-ink/80">
+        Connectly helps you organize your contacts, search and filter them in seconds, and keep
+        your favourite people close, all in one place. Simple, powerful and built for your growth.
+      </p>
+
+      <div className="mt-8 flex flex-wrap items-center gap-4">
+        <Link
+          to={startLink}
+          className="flex items-center gap-2 rounded-xl bg-sidebar px-7 py-3.5 text-sm font-semibold text-white transition hover:opacity-90"
+        >
+          Get Started Free <ArrowRight size={16} />
+        </Link>
+        <a
+          href="#features"
+          className="rounded-xl border border-line bg-white/70 px-7 py-3.5 text-sm font-semibold text-ink transition hover:bg-white"
+        >
+          Explore Features
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="features" className="scroll-mt-20 border-b border-line/60 bg-card">
+  <div className="mx-auto grid max-w-7xl gap-8 px-4 py-14 sm:grid-cols-2 sm:px-6 lg:grid-cols-4 lg:gap-0">
+    {features.map(({ icon: Icon, title, text, tint }, i) => (
+      <div
+        key={title}
+        data-reveal
+        style={{ "--reveal-delay": `${i * 120}ms` }}
+        className={`lg:px-8 ${i > 0 ? "lg:border-l lg:border-line" : "lg:pl-0"}`}
+      >
+        <div className={`flex h-14 w-14 items-center justify-center rounded-full ${tint}`}>
+          <Icon size={24} />
         </div>
-      </section>
-
-      <section id="features" className="scroll-mt-20 border-b border-line/60 bg-card">
-        <div className="mx-auto grid max-w-7xl gap-8 px-6 py-14 sm:grid-cols-2 lg:grid-cols-4 lg:gap-0">
-          {features.map(({ icon: Icon, title, text, tint }, i) => (
-            <div
-              key={title}
-              data-reveal
-              style={{ "--reveal-delay": `${i * 120}ms` }}
-              className={`lg:px-8 ${i > 0 ? "lg:border-l lg:border-line" : "lg:pl-0"}`}
-            >
-              <div className={`flex h-14 w-14 items-center justify-center rounded-full ${tint}`}>
-                <Icon size={24} />
-              </div>
-              <h3 className="mt-5 font-serif text-xl font-semibold text-primary-dark">{title}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-muted">{text}</p>
-            </div>
-          ))}
-        </div>
-      </section>
+        <h3 className="mt-5 font-serif text-xl font-semibold text-primary-dark">{title}</h3>
+        <p className="mt-2 text-sm leading-relaxed text-muted">{text}</p>
+      </div>
+    ))}
+  </div>
+</section>
 
       <section id="about" className="scroll-mt-20">
-        <div className="mx-auto max-w-7xl px-6 py-16">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 py-16 ">
           <div data-reveal className="flex flex-col justify-between gap-6 lg:flex-row lg:items-end">
             <div>
               <span className="rounded-full bg-lavender/60 px-3 py-1 text-xs font-medium uppercase tracking-wider text-accent">
                 Why Connectly
               </span>
-              <h2 className="mt-4 max-w-md font-serif text-4xl font-semibold leading-tight text-primary-dark">
+              <h2 className="mt-4 max-w-md font-serif text-3xl font-semibold leading-tight text-primary-dark  sm:text-4xl" >
                 Everything you need to build <span className="text-accent">lasting connections.</span>
               </h2>
             </div>
@@ -222,10 +224,10 @@ export default function Landing() {
       </section>
 
       <section id="how" className="scroll-mt-20 bg-card">
-        <div className="mx-auto max-w-7xl px-6 py-16">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 py-16">
           <h2
             data-reveal
-            className="text-center font-serif text-4xl font-semibold text-primary-dark"
+       className="text-center font-serif text-3xl font-semibold text-primary-dark sm:text-4xl"
           >
             How It Works
           </h2>
@@ -249,7 +251,7 @@ export default function Landing() {
       </section>
 
       <section className="bg-sidebar">
-        <div data-reveal className="mx-auto max-w-7xl px-6 py-16 text-center">
+        <div data-reveal className="mx-auto max-w-7xl px-4 sm:px-6 py-16 text-center">
           <Sprout className="mx-auto text-lavender" size={28} />
           <h2 className="mt-4 font-serif text-3xl font-semibold text-white">
             Your next connection starts here.
@@ -267,13 +269,13 @@ export default function Landing() {
       </section>
 
       <footer className="bg-card">
-        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-6 py-8 text-sm text-muted sm:flex-row">
+       <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-4 py-8 text-sm text-muted sm:flex-row sm:px-6">
           <div className="flex items-center gap-2">
             <Sprout className="text-primary" size={20} />
             <span className="font-serif text-lg font-semibold text-primary-dark">Connectly</span>
             <span className="ml-3 hidden sm:inline">Connections, thoughtfully organized.</span>
           </div>
-          <div className="flex items-center gap-6">
+         <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
             <span>© {new Date().getFullYear()} Connectly</span>
             <a href="#home" className="hover:text-ink">Home</a>
             <a href="#features" className="hover:text-ink">Features</a>
