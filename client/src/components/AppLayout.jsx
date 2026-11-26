@@ -1,7 +1,9 @@
+import { useState } from "react";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
-import { LayoutDashboard, Users, UserPlus, Star, Trash2, LogOut, Sprout } from "lucide-react";
+import { LayoutDashboard, Users, UserPlus, Star, Trash2, LogOut, Sprout, Menu, X } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import NotificationBell from "./NotificationBell";
+
 
 const links = [
   {
@@ -49,6 +51,7 @@ export default function AppLayout() {
   const navigate = useNavigate();
   const { pathname, search } = useLocation();
   const isFavView = new URLSearchParams(search).get("view") === "favourites";
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const handleLogout = () => {
     logout();
@@ -57,10 +60,27 @@ export default function AppLayout() {
 
   return (
     <div className="flex min-h-screen bg-page">
-      <aside className="sticky top-0 flex h-screen w-64 shrink-0 flex-col bg-sidebar">
-        <div className="flex items-center gap-2 px-6 pt-6">
-          <Sprout className="text-lavender" size={26} />
-          <span className="font-serif text-2xl font-semibold text-white">Connectly</span>
+      {menuOpen && (
+        <div className="fixed inset-0 z-30 bg-black/40 lg:hidden" onClick={() => setMenuOpen(false)} />
+      )}
+
+      <aside
+        className={`fixed inset-y-0 left-0 z-40 flex h-screen w-64 shrink-0 flex-col bg-sidebar transition-transform duration-200 lg:sticky lg:top-0 lg:z-auto lg:translate-x-0 ${
+          menuOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
+        <div className="flex items-center justify-between px-6 pt-6">
+          <div className="flex items-center gap-2">
+            <Sprout className="text-lavender" size={26} />
+            <span className="font-serif text-2xl font-semibold text-white">Connectly</span>
+          </div>
+          <button
+            onClick={() => setMenuOpen(false)}
+            aria-label="Close menu"
+            className="text-white/70 hover:text-white lg:hidden"
+          >
+            <X size={22} />
+          </button>
         </div>
 
         <div className="flex flex-col items-center border-b border-white/10 px-6 pb-6 pt-6">
@@ -80,6 +100,7 @@ export default function AppLayout() {
               <Link
                 key={to}
                 to={to}
+                onClick={() => setMenuOpen(false)}
                 className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition ${
                   active(pathname, isFavView)
                     ? "bg-white/15 text-white"
@@ -94,15 +115,24 @@ export default function AppLayout() {
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-20 flex h-20 shrink-0 items-center justify-between border-b border-line bg-topbar px-8">
-          <div>
-            <h1 className="font-serif text-xl font-semibold text-ink">
-              {getGreeting()}, {user.name.split(" ")[0]}
-            </h1>
-            <p className="text-sm text-ink/70">Let's keep your connections strong.</p>
+        <header className="sticky top-0 z-20 flex h-16 shrink-0 items-center justify-between gap-3 border-b border-line bg-topbar px-4 sm:h-20 sm:px-8">
+          <div className="flex min-w-0 items-center gap-3">
+            <button
+              onClick={() => setMenuOpen(true)}
+              aria-label="Open menu"
+              className="rounded-lg p-1.5 text-ink hover:bg-white/60 lg:hidden"
+            >
+              <Menu size={22} />
+            </button>
+            <div className="min-w-0">
+              <h1 className="truncate font-serif text-lg font-semibold text-ink sm:text-xl">
+                {getGreeting()}, {user.name.split(" ")[0]}
+              </h1>
+              <p className="hidden text-sm text-ink/70 sm:block">Let's keep your connections strong.</p>
+            </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex shrink-0 items-center gap-3">
             <NotificationBell />
             <button
               onClick={handleLogout}
@@ -115,7 +145,7 @@ export default function AppLayout() {
           </div>
         </header>
 
-        <main className="min-w-0 flex-1 p-8 pb-16">
+        <main className="min-w-0 flex-1 p-4 pb-16 sm:p-8 sm:pb-16">
           <Outlet />
         </main>
       </div>
