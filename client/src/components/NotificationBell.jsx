@@ -138,7 +138,7 @@ export default function NotificationBell() {
         <section
           role="dialog"
           aria-label="Notifications"
-          className="absolute right-0 top-12 z-50 w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-line bg-card shadow-xl"
+  className="fixed inset-x-3 top-[4.25rem] z-50 overflow-hidden rounded-2xl border border-line bg-card shadow-xl sm:absolute sm:inset-x-auto sm:right-0 sm:top-12 sm:w-[22rem]"
         >
           <div className="flex items-center justify-between border-b border-line px-4 py-3">
             <div>

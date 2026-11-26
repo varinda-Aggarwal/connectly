@@ -11,10 +11,13 @@ import {
   Search,
   Star,
   Trash2,
+  Upload,
   Users,
 } from "lucide-react";
 import { deleteContact, fetchContacts, fetchTags, toggleFavourite } from "../api/contacts";
 import useDebounce from "../hooks/useDebounce";
+import ExportButton from "../components/ExportButton";
+import ImportDialog from "../components/ImportDialog";
 
 const LIMIT = 10;
 
@@ -36,7 +39,7 @@ function Avatar({ contact }) {
     return <img src={contact.photoUrl} alt="" className="h-10 w-10 rounded-full object-cover" />;
   }
   return (
-    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-lavender font-semibold text-accent">
+    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-lavender font-semibold text-accent">
       {contact.name.charAt(0).toUpperCase()}
     </div>
   );
@@ -54,9 +57,9 @@ function SkeletonRows() {
 
 function StatCard({ label, value, color }) {
   return (
-    <div className="rounded-2xl border border-line bg-card px-5 py-4 shadow-sm">
+    <div className="rounded-2xl border border-line bg-card px-3 py-3 shadow-sm sm:px-5 sm:py-4">
       <p className="text-xs text-muted">{label}</p>
-      <p className={`mt-1 font-serif text-3xl font-semibold ${color}`}>{value}</p>
+      <p className={`mt-1 font-serif text-2xl font-semibold sm:text-3xl ${color}`}>{value}</p>
     </div>
   );
 }
@@ -124,6 +127,7 @@ export default function Contacts() {
   const setView = (v) => setSearchParams(v === "all" ? {} : { view: v });
   const [page, setPage] = useState(1);
   const [toDelete, setToDelete] = useState(null);
+  const [importOpen, setImportOpen] = useState(false);
 
   const debouncedSearch = useDebounce(search.trim());
 
@@ -194,29 +198,46 @@ export default function Contacts() {
 
   return (
     <div>
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="font-serif text-3xl font-semibold text-ink">All Contacts</h1>
+          <h1 className="font-serif text-2xl font-semibold text-ink sm:text-3xl">All Contacts</h1>
           <p className="mt-1 text-sm text-muted">Manage and organize your connections</p>
         </div>
-        <Link
-          to="/contacts/new"
-          className="flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-primary-dark"
-        >
-          <Plus size={18} /> Add Contact
-        </Link>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setImportOpen(true)}
+            className="inline-flex items-center gap-2 rounded-xl border border-line bg-card px-4 py-2.5 text-sm font-medium text-ink transition hover:bg-primary-soft"
+          >
+            <Upload size={16} /> Import
+          </button>
+          <ExportButton
+            params={{
+              search: debouncedSearch,
+              tag,
+              favourite: view === "favourites",
+              recent: view === "recent",
+            }}
+          />
+          <Link
+            to="/contacts/new"
+            className="flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-primary-dark"
+          >
+            <Plus size={18} /> Add Contact
+          </Link>
+        </div>
       </div>
 
-      <div className="mb-6 grid grid-cols-3 gap-4">
+      <div className="mb-6 grid grid-cols-3 gap-2 sm:gap-4">
         <StatCard label="Total Contacts" value={stats?.total ?? "-"} color="text-ink" />
         <StatCard label="Favourites" value={stats?.favourites ?? "-"} color="text-primary" />
         <StatCard label="Recently Added" value={stats?.recent ?? "-"} color="text-accent" />
       </div>
 
       <div className="rounded-2xl border border-line bg-card shadow-sm">
-        <div className="space-y-4 p-5">
+        <div className="space-y-4 p-4 sm:p-5">
           <div className="flex flex-wrap items-center gap-3">
-            <div className="flex min-w-[240px] flex-1 items-center gap-2 rounded-xl border border-line bg-page px-3.5 py-2.5 focus-within:border-primary">
+            <div className="flex min-w-0 flex-1 items-center gap-2 rounded-xl border border-line bg-page px-3.5 py-2.5 focus-within:border-primary sm:min-w-[240px]">
               <Search size={16} className="text-muted" />
               <input
                 value={search}
@@ -225,7 +246,7 @@ export default function Contacts() {
                   setPage(1);
                 }}
                 placeholder="Search name or email..."
-                className="w-full bg-transparent text-sm text-ink outline-none placeholder:text-muted/70"
+                className="w-full min-w-0 bg-transparent text-sm text-ink outline-none placeholder:text-muted/70"
               />
             </div>
 
@@ -320,57 +341,116 @@ export default function Contacts() {
               </div>
             )
           ) : (
-            <table className="w-full text-left text-sm">
-              <thead className="text-xs uppercase tracking-wider text-muted">
-                <tr>
-                  <th className="px-5 py-3 font-semibold">Contact</th>
-                  <th className="px-5 py-3 font-semibold">Company</th>
-                  <th className="px-5 py-3 font-semibold">Tags</th>
-                  <th className="w-24 px-5 py-3" />
-                </tr>
-              </thead>
-              <tbody>
-                {isLoading ? (
-                  <SkeletonRows />
-                ) : (
-                  contacts.map((c) => (
-                    <tr key={c._id} className="border-t border-line transition hover:bg-primary-soft/30">
-                      <td className="px-5 py-4">
-                        <div className="flex items-center gap-3">
-                          <Avatar contact={c} />
-                          <div>
-                            <Link
-                              to={`/contacts/${c._id}`}
-                              className="font-medium text-ink hover:text-primary-dark hover:underline"
-                            >
-                              {c.name}
-                            </Link>
-                            <p className="text-xs text-muted">{c.email || "No email"}</p>
+            <>
+              {/* Desktop / tablet: table */}
+              <table className="hidden w-full text-left text-sm md:table">
+                <thead className="text-xs uppercase tracking-wider text-muted">
+                  <tr>
+                    <th className="px-5 py-3 font-semibold">Contact</th>
+                    <th className="px-5 py-3 font-semibold">Company</th>
+                    <th className="px-5 py-3 font-semibold">Tags</th>
+                    <th className="w-24 px-5 py-3" />
+                  </tr>
+                </thead>
+                <tbody>
+                  {isLoading ? (
+                    <SkeletonRows />
+                  ) : (
+                    contacts.map((c) => (
+                      <tr key={c._id} className="border-t border-line transition hover:bg-primary-soft/30">
+                        <td className="px-5 py-4">
+                          <div className="flex items-center gap-3">
+                            <Avatar contact={c} />
+                            <div>
+                              <Link
+                                to={`/contacts/${c._id}`}
+                                className="font-medium text-ink hover:text-primary-dark hover:underline"
+                              >
+                                {c.name}
+                              </Link>
+                              <p className="text-xs text-muted">{c.email || "No email"}</p>
+                            </div>
                           </div>
-                        </div>
-                      </td>
-                      <td className="px-5 py-4">
-                        <p className="text-ink">{c.company || "-"}</p>
-                        <p className="text-xs text-muted">{c.designation}</p>
-                      </td>
-                      <td className="px-5 py-4">
-                        <div className="flex flex-wrap gap-1.5">
-                          {c.tags.map((t) => (
-                            <span
-                              key={t}
-                              className="rounded-full bg-primary-soft px-3 py-1 text-xs font-medium text-primary-dark"
+                        </td>
+                        <td className="px-5 py-4">
+                          <p className="text-ink">{c.company || "-"}</p>
+                          <p className="text-xs text-muted">{c.designation}</p>
+                        </td>
+                        <td className="px-5 py-4">
+                          <div className="flex flex-wrap gap-1.5">
+                            {c.tags.map((t) => (
+                              <span
+                                key={t}
+                                className="rounded-full bg-primary-soft px-3 py-1 text-xs font-medium text-primary-dark"
+                              >
+                                {t}
+                              </span>
+                            ))}
+                          </div>
+                        </td>
+                        <td className="px-5 py-4">
+                          <div className="flex items-center justify-end gap-1">
+                            <button
+                              onClick={() => favMutation.mutate(c._id)}
+                              aria-label={c.isFavourite ? "Remove from favourites" : "Add to favourites"}
+                              className="rounded-lg p-1.5 transition hover:bg-primary-soft"
                             >
-                              {t}
-                            </span>
-                          ))}
+                              <Star
+                                size={18}
+                                className={c.isFavourite ? "fill-accent text-accent" : "text-muted/60"}
+                              />
+                            </button>
+                            <RowMenu contact={c} onDelete={setToDelete} />
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+
+              {/* Mobile: cards */}
+              <div className="divide-y divide-line md:hidden">
+                {isLoading
+                  ? Array.from({ length: 4 }).map((_, i) => (
+                      <div key={i} className="p-4">
+                        <div className="h-16 animate-pulse rounded-lg bg-line/60" />
+                      </div>
+                    ))
+                  : contacts.map((c) => (
+                      <div key={c._id} className="flex items-start gap-3 p-4">
+                        <Avatar contact={c} />
+                        <div className="min-w-0 flex-1">
+                          <Link
+                            to={`/contacts/${c._id}`}
+                            className="block truncate font-medium text-ink hover:text-primary-dark"
+                          >
+                            {c.name}
+                          </Link>
+                          <p className="truncate text-xs text-muted">{c.email || "No email"}</p>
+                          {(c.company || c.designation) && (
+                            <p className="mt-0.5 truncate text-xs text-ink/80">
+                              {[c.company, c.designation].filter(Boolean).join(" · ")}
+                            </p>
+                          )}
+                          {c.tags.length > 0 && (
+                            <div className="mt-2 flex flex-wrap gap-1.5">
+                              {c.tags.map((t) => (
+                                <span
+                                  key={t}
+                                  className="rounded-full bg-primary-soft px-2.5 py-0.5 text-xs font-medium text-primary-dark"
+                                >
+                                  {t}
+                                </span>
+                              ))}
+                            </div>
+                          )}
                         </div>
-                      </td>
-                      <td className="px-5 py-4">
-                        <div className="flex items-center justify-end gap-1">
+                        <div className="flex items-center">
                           <button
                             onClick={() => favMutation.mutate(c._id)}
                             aria-label={c.isFavourite ? "Remove from favourites" : "Add to favourites"}
-                            className="rounded-lg p-1.5 transition hover:bg-primary-soft"
+                            className="rounded-lg p-1.5 hover:bg-primary-soft"
                           >
                             <Star
                               size={18}
@@ -379,12 +459,10 @@ export default function Contacts() {
                           </button>
                           <RowMenu contact={c} onDelete={setToDelete} />
                         </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+                      </div>
+                    ))}
+              </div>
+            </>
           )}
         </div>
 
@@ -450,6 +528,8 @@ export default function Contacts() {
           </div>
         </div>
       )}
+
+      <ImportDialog open={importOpen} onClose={() => setImportOpen(false)} />
     </div>
   );
 }

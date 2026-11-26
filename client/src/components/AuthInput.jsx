@@ -16,8 +16,7 @@ export default function AuthInput({ label, icon: Icon, type = "text", error, reg
         <Icon size={18} className="text-muted" />
         <input
           type={isPassword && show ? "text" : type}
-          className="w-full bg-transparent text-sm text-ink outline-none placeholder:text-muted/70"
-          {...registerProps}
+className="w-full min-w-0 bg-transparent text-base text-ink outline-none placeholder:text-muted/70 sm:text-sm"          {...registerProps}
           {...rest}
         />
         {isPassword && (
